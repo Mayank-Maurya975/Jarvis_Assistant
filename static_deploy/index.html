@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!--
+  JARVIS UI — Static Deploy Version
+  ===================================
+  Host this on GitHub Pages, Vercel, Netlify, etc.
+  
+  TO CONNECT TO YOUR JARVIS BACKEND:
+  1. Run: python main.py --tunnel
+  2. Copy the ngrok/cloudflare URL from the terminal
+  3. Set it below in JARVIS_BACKEND_URL
+  4. Push to GitHub → UI connects to your live JARVIS
+  
+  When JARVIS is offline, the UI still loads and shows OFFLINE status.
+  When JARVIS comes back online, it auto-reconnects.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>J.A.R.V.I.S Interface</title>
+<script>
+  // ════════════════════════════════════════════════
+  // SET YOUR JARVIS BACKEND URL HERE
+  // Get it by running: python main.py --tunnel
+  // Example: "https://abc123.ngrok-free.app"
+  // Leave empty to auto-detect (works on same machine)
+  // ════════════════════════════════════════════════
+  window.JARVIS_BACKEND_URL = "";
+</script>
+</head>
+<body>
+<script>
+  // Redirect to the actual UI served by Flask,
+  // or load standalone if backend URL is set
+  const backend = window.JARVIS_BACKEND_URL;
+  if (backend && backend.length > 0) {
+    // Load the real UI from the backend
+    window.location.href = backend;
+  } else {
+    document.body.innerHTML = `
+      <div style="font-family:monospace;background:#03060c;color:#00e5ff;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px">
+        <div style="font-size:3rem;font-weight:900;letter-spacing:0.3em">J.A.R.V.I.S</div>
+        <div style="color:#628296;font-size:0.9rem;letter-spacing:0.2em">JUST A RATHER VERY INTELLIGENT SYSTEM</div>
+        <div style="margin-top:20px;padding:20px;border:1px solid rgba(0,229,255,0.2);border-radius:8px;max-width:500px;text-align:center">
+          <div style="color:#ffaa00;margin-bottom:12px;font-size:0.8rem;letter-spacing:0.1em">⚠ BACKEND URL NOT CONFIGURED</div>
+          <div style="color:#628296;font-size:0.75rem;line-height:1.8">
+            1. Run <span style="color:#00e5ff">python main.py --tunnel</span> on your PC<br>
+            2. Copy the public URL from the terminal<br>
+            3. Set <span style="color:#00e5ff">window.JARVIS_BACKEND_URL</span> in this file<br>
+            4. Push to GitHub Pages
+          </div>
+        </div>
+      </div>
+    `;
+  }
+</script>
+</body>
+</html>

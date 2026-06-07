@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>J.A.R.V.I.S Interface</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+:root {
+  --bg: #03060c;
+  --panel: rgba(5, 10, 18, 0.7);
+  --panel-border: rgba(0, 229, 255, 0.15);
+  --cyan: #00e5ff;
+  --cyan-dim: rgba(0, 229, 255, 0.3);
+  --purple: #a633ff;
+  --purple-dim: rgba(166, 51, 255, 0.3);
+  --pink: #ff2d78;
+  --green: #00ff88;
+  --gold: #ffaa00;
+  --red: #ff3c3c;
+  --blue: #007bff;
+  --text-main: #c8e8ff;
+  --text-muted: #628296;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text-main); font-family: 'Rajdhani', sans-serif; font-size: 13px; user-select: none; }
+
+/* Background FX */
+body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(0, 100, 200, 0.05), transparent 70%); pointer-events: none; z-index: 0; }
+body::after { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(0, 229, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 229, 255, 0.02) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
+
+/* Main Layout */
+.layout-wrapper { display: flex; flex-direction: column; height: 100vh; padding: 20px 25px; gap: 20px; position: relative; z-index: 1; }
+
+/* Top Header */
+.top-header { display: flex; justify-content: space-between; align-items: center; padding: 0 10px; height: 60px; flex-shrink: 0; }
+.header-left { display: flex; align-items: center; gap: 15px; }
+.logo-icon { width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; position: relative; }
+.logo-icon svg { width: 100%; height: 100%; filter: drop-shadow(0 0 8px var(--cyan-dim)); }
+
+.header-title-container { display: flex; flex-direction: column; justify-content: center; }
+.header-title { font-family: 'Orbitron', sans-serif; font-size: 2rem; font-weight: 800; letter-spacing: 0.2em; color: var(--cyan); text-shadow: 0 0 12px var(--cyan-dim); line-height: 1; margin-bottom: 2px; }
+.header-subtitle { font-family: 'Rajdhani', sans-serif; font-size: 0.75rem; letter-spacing: 0.18em; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+
+.header-center { display: flex; align-items: center; gap: 15px; margin-left: auto; margin-right: 60px; }
+.listening-text { font-family: 'Orbitron', sans-serif; font-size: 0.75rem; letter-spacing: 0.15em; color: var(--cyan); display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.listening-text i { font-size: 0.9rem; }
+.wave-top { display: flex; align-items: center; gap: 3px; height: 24px; }
+.wb { width: 2px; background: var(--cyan); border-radius: 1px; animation: wb-anim 0.5s ease-in-out infinite alternate; box-shadow: 0 0 5px var(--cyan); }
+.wb:nth-child(1) { height: 6px; animation-delay: 0.0s; } .wb:nth-child(2) { height: 14px; animation-delay: 0.1s; }
+.wb:nth-child(3) { height: 22px; animation-delay: 0.2s; } .wb:nth-child(4) { height: 12px; animation-delay: 0.3s; }
+.wb:nth-child(5) { height: 18px; animation-delay: 0.1s; } .wb:nth-child(6) { height: 8px; animation-delay: 0.2s; }
+.wb:nth-child(7) { height: 16px; animation-delay: 0.0s; } .wb:nth-child(8) { height: 10px; animation-delay: 0.3s; }
+
+.header-right { display: flex; align-items: center; gap: 35px; }
+.standby-box { display: flex; align-items: center; gap: 10px; font-family: 'Orbitron', sans-serif; font-size: 0.75rem; letter-spacing: 0.1em; color: var(--text-main); font-weight: 600; }
+.status-dot { width: 10px; height: 10px; background: var(--green); border-radius: 50%; box-shadow: 0 0 10px var(--green); }
+.battery-box { display: flex; align-items: center; gap: 8px; border: 1px solid rgba(0, 255, 136, 0.3); padding: 5px 12px; border-radius: 4px; background: rgba(0, 255, 136, 0.05); }
+.battery-box i { color: var(--green); font-size: 1.1rem; }
+.battery-box span { font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: var(--text-main); font-weight: 600; }
+.clock-box { text-align: right; display: flex; flex-direction: column; justify-content: center; }
+.clock-time { font-family: 'Orbitron', sans-serif; font-size: 1.6rem; font-weight: 700; color: var(--cyan); letter-spacing: 0.05em; text-shadow: 0 0 12px var(--cyan-dim); line-height: 1; margin-bottom: 4px; }
+.clock-date { font-family: 'Orbitron', sans-serif; font-size: 0.65rem; letter-spacing: 0.15em; color: var(--text-muted); font-weight: 600; }
+
+/* Panels */
+.main-grid { display: grid; grid-template-columns: 320px 1fr 320px; gap: 20px; flex: 1; min-height: 0; }
+.main-grid > div { min-height: 0; display: flex; flex-direction: column; gap: 20px; }
+.side-panel { overflow-y: auto; padding-right: 4px; }
+.side-panel::-webkit-scrollbar { width: 4px; }
+.side-panel::-webkit-scrollbar-track { background: transparent; }
+.side-panel::-webkit-scrollbar-thumb { background: rgba(0, 229, 255, 0.2); border-radius: 2px; }
+
+.panel { background: var(--panel); border: 1px solid var(--panel-border); border-radius: 8px; padding: 22px; display: flex; flex-direction: column; position: relative; flex-shrink: 0; box-shadow: inset 0 0 30px rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
+.panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.4), transparent); }
+.panel-title { font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: #fff; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 20px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+
+/* Metrics Linear */
+.metric-row { margin-bottom: 15px; }
+.metric-labels { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.75rem; color: var(--text-main); font-weight: 600; letter-spacing: 0.05em; }
+.metric-labels i { width: 18px; text-align: center; margin-right: 6px; }
+.metric-labels .val { font-family: 'Orbitron', sans-serif; font-weight: 700; }
+.metric-bar-bg { height: 5px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; overflow: hidden; display: flex; position: relative; }
+.metric-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; position: relative; }
+.metric-bar-fill::after { content: ''; position: absolute; right: 0; top: -1px; width: 4px; height: 7px; background: #fff; box-shadow: 0 0 8px #fff; border-radius: 2px; }
+
+/* Circular Metrics */
+.circle-metrics-grid { display: flex; justify-content: space-between; margin-top: 25px; padding: 0 10px; }
+.circle-meter { position: relative; width: 70px; height: 70px; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+.circle-meter svg { position: absolute; inset: -5px; width: calc(100% + 10px); height: calc(100% + 10px); transform: rotate(-90deg); }
+.circle-bg { fill: none; stroke: rgba(255, 255, 255, 0.05); stroke-width: 2.5; }
+.circle-fill { fill: none; stroke-width: 2.5; stroke-linecap: round; transition: stroke-dasharray 0.5s ease; }
+.circle-meter.cyan .circle-fill { stroke: var(--cyan); filter: drop-shadow(0 0 4px var(--cyan)); }
+.circle-meter.orange .circle-fill { stroke: #ff5500; filter: drop-shadow(0 0 4px #ff5500); }
+.circle-meter.yellow .circle-fill { stroke: var(--gold); filter: drop-shadow(0 0 4px var(--gold)); }
+.circle-inner { text-align: center; z-index: 1; display: flex; flex-direction: column; align-items: center; margin-top: 2px; }
+.circle-lbl { font-family: 'Orbitron', sans-serif; font-size: 0.5rem; color: var(--text-main); letter-spacing: 0.05em; font-weight: 600; display: flex; align-items: center; gap: 4px; margin-bottom: 2px; }
+.circle-lbl i { font-size: 0.6rem; }
+.circle-val { font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: var(--cyan); font-weight: 700; line-height: 1; }
+.circle-meter.orange .circle-val { color: #ff5500; }
+.circle-meter.yellow .circle-val { color: var(--gold); }
+
+/* Quick Access Grid */
+.qa-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.qa-btn { background: transparent; border: none; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s; outline: none; }
+.qa-btn:hover { transform: translateY(-2px); }
+.qa-icon-wrap { width: 42px; height: 42px; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; background: rgba(255,255,255,0.03); border: 1px solid transparent; transition: all 0.3s; }
+.qa-btn:hover .qa-icon-wrap { background: rgba(255,255,255,0.08); border-color: currentColor; box-shadow: 0 0 10px currentColor; }
+.qa-btn .lbl { font-family: 'Orbitron', sans-serif; font-size: 0.55rem; color: var(--text-muted); letter-spacing: 0.05em; font-weight: 600; }
+
+/* Visualizer */
+.visualizer-box { display: flex; align-items: flex-end; justify-content: center; gap: 4px; height: 85px; padding: 10px 0; margin-bottom: 5px; }
+.viz-bar { width: 6px; border-radius: 3px; background: linear-gradient(to top, var(--cyan), var(--purple), var(--pink)); transition: height 0.1s ease; min-height: 4px; box-shadow: 0 0 8px rgba(0,229,255,0.3); }
+.viz-label { text-align: center; font-family: 'Orbitron', sans-serif; font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.1em; }
+.viz-status { color: var(--green); margin-left: 5px; font-weight: 700; text-shadow: 0 0 8px var(--green); }
+
+/* Center Panel - ORB */
+.center-panel { display: flex; flex-direction: column; min-height: 0; overflow: hidden; background: transparent; border: none; padding: 0; box-shadow: none; }
+.orb-container { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; min-height: 0; margin-top: 10px; }
+.orb-wrapper { position: relative; width: 400px; height: 400px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+
+/* Orbital Rings Setup */
+.ring { position: absolute; border-radius: 50%; box-sizing: border-box; }
+/* Outer subtle ring with dots */
+.ring-outer { width: 100%; height: 100%; border: 1px solid rgba(0, 229, 255, 0.1); }
+.ring-outer .dot { position: absolute; width: 4px; height: 4px; background: var(--cyan); border-radius: 50%; box-shadow: 0 0 8px var(--cyan); top: 50%; transform: translateY(-50%); }
+.ring-outer .dot:nth-child(1) { left: -2px; }
+.ring-outer .dot:nth-child(2) { right: -2px; }
+
+/* Second layer: dashed cyan */
+.ring-1 { width: 85%; height: 85%; border: 1.5px dashed rgba(0, 229, 255, 0.4); animation: spin 40s linear infinite; }
+
+/* Third layer: Solid thin rings with glowing nodes */
+.ring-2 { width: 70%; height: 70%; border: 1px solid rgba(0, 229, 255, 0.2); animation: spin-reverse 25s linear infinite; }
+.ring-2::before { content:''; position:absolute; width: 100%; height: 100%; border: 2px solid transparent; border-top-color: var(--cyan); border-bottom-color: var(--purple); border-radius: 50%; }
+.orb-node { position: absolute; width: 8px; height: 8px; background: var(--cyan); border-radius: 50%; box-shadow: 0 0 12px var(--cyan); }
+.ring-2 .orb-node:nth-child(1) { top: -4px; left: 50%; transform: translateX(-50%); }
+.ring-2 .orb-node:nth-child(2) { top: auto; bottom: -4px; left: 50%; transform: translateX(-50%); background: var(--gold); box-shadow: 0 0 12px var(--gold); }
+
+/* Inner thick segments */
+.ring-3 { width: 55%; height: 55%; border: 3px solid rgba(255, 255, 255, 0.05); }
+.ring-3::after { content:''; position:absolute; inset: -3px; border: 3px solid transparent; border-right-color: var(--cyan); border-left-color: var(--pink); border-radius: 50%; animation: spin 15s linear infinite; }
+
+.orb-core { width: 180px; height: 180px; background: radial-gradient(circle at 50% 50%, #051420, #010408); border-radius: 50%; border: 2px solid rgba(0, 229, 255, 0.3); box-shadow: 0 0 50px rgba(0, 229, 255, 0.2), inset 0 0 40px rgba(0, 229, 255, 0.1); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; transition: all 0.3s; position: relative; }
+.orb-core:hover { box-shadow: 0 0 80px rgba(0, 229, 255, 0.4), inset 0 0 50px rgba(0, 229, 255, 0.2); transform: scale(1.03); border-color: rgba(0, 229, 255, 0.6); }
+.orb-core h1 { font-family: 'Orbitron', sans-serif; font-size: 6rem; font-weight: 500; margin: 0; color: var(--cyan); text-shadow: 0 0 20px var(--cyan-dim); line-height: 1; }
+.orb-core p { font-family: 'Orbitron', sans-serif; font-size: 0.65rem; color: var(--cyan); letter-spacing: 0.15em; margin-top: 10px; font-weight: 600; text-shadow: 0 0 5px var(--cyan-dim); }
+
+/* Background orbital paths (SVG) */
+.orb-bg-paths { position: absolute; inset: -100px; pointer-events: none; opacity: 0.4; }
+.orb-bg-paths path { fill: none; stroke: var(--cyan); stroke-width: 0.5; stroke-dasharray: 4 8; }
+
+/* Center Panel - Log */
+.chat-panel { flex: 0 0 350px; height: 350px; max-height: 350px; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 8px; padding: 22px; position: relative; margin-top: auto; min-height: 0; }
+.chat-panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.4), transparent); }
+.chat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0; }
+.chat-header span { font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: var(--cyan); letter-spacing: 0.15em; font-weight: 600; }
+.btn-clear { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: var(--text-main); font-family: 'Orbitron', sans-serif; font-size: 0.6rem; padding: 6px 16px; border-radius: 20px; cursor: pointer; transition: all 0.2s; letter-spacing: 0.1em; font-weight: 600; }
+.btn-clear:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,229,255,0.05); }
+
+.chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; padding-right: 10px; min-height: 0; }
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
+.chat-messages::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.2); border-radius: 2px; }
+
+.msg-row { display: flex; gap: 15px; max-width: 85%; }
+.msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
+
+.avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-family: 'Orbitron', sans-serif; font-size: 1rem; font-weight: 700; flex-shrink: 0; }
+.jarvis .avatar { border: 1px solid var(--cyan); color: var(--cyan); background: rgba(0, 229, 255, 0.05); box-shadow: 0 0 10px rgba(0,229,255,0.2); }
+.user .avatar { border: 1px solid var(--purple); color: var(--purple); background: rgba(166, 51, 255, 0.05); box-shadow: 0 0 10px rgba(166,51,255,0.2); }
+
+.bubble { padding: 14px 18px; border-radius: 8px; position: relative; font-family: 'Share Tech Mono', monospace; font-size: 0.9rem; line-height: 1.5; color: var(--text-main); }
+.jarvis .bubble { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(0, 229, 255, 0.2); border-left: 3px solid var(--cyan); }
+.user .bubble { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(166, 51, 255, 0.2); border-right: 3px solid var(--purple); }
+
+.msg-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-family: 'Orbitron', sans-serif; font-size: 0.6rem; letter-spacing: 0.05em; font-weight: 600; }
+.jarvis .msg-info .sender { color: var(--cyan); }
+.user .msg-info .sender { color: var(--purple); }
+.msg-time { color: var(--text-muted); }
+
+.chat-input-wrapper { display: flex; gap: 12px; margin-top: 20px; flex-shrink: 0; align-items: stretch; height: 45px; }
+.mic-btn { width: 45px; border-radius: 8px; border: 1px solid rgba(0, 229, 255, 0.3); background: rgba(0, 229, 255, 0.05); color: var(--cyan); display: flex; justify-content: center; align-items: center; font-size: 1.2rem; cursor: pointer; transition: all 0.3s; flex-shrink: 0; }
+.mic-btn:hover { background: rgba(0, 229, 255, 0.15); border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,229,255,0.3); }
+.input-container { flex: 1; position: relative; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; background: rgba(0, 0, 0, 0.3); display: flex; }
+.chat-input { flex: 1; background: transparent; border: none; padding: 0 20px; color: var(--text-main); font-family: 'Share Tech Mono', monospace; font-size: 0.95rem; outline: none; width: 100%; }
+.chat-input::placeholder { color: rgba(98, 130, 150, 0.6); font-family: 'Orbitron', sans-serif; font-size: 0.7rem; letter-spacing: 0.1em; font-weight: 600; }
+.send-btn { width: 45px; background: transparent; border: none; color: var(--cyan); display: flex; justify-content: center; align-items: center; font-size: 1.2rem; cursor: pointer; transition: color 0.2s; }
+.send-btn:hover { color: #fff; }
+
+/* Right Panel items */
+.status-list { display: flex; flex-direction: column; gap: 12px; }
+.status-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(0,0,0,0.2); border-radius: 6px; border: 1px solid rgba(255,255,255,0.02); }
+.status-left { display: flex; align-items: center; gap: 12px; font-size: 0.75rem; color: #fff; font-weight: 600; font-family: 'Rajdhani', sans-serif; letter-spacing: 0.05em; }
+.status-left i { width: 20px; text-align: center; font-size: 1rem; }
+.status-item .status-right { font-family: 'Orbitron', sans-serif; font-size: 0.6rem; padding: 4px 8px; border-radius: 4px; letter-spacing: 0.1em; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+
+/* Specific Status Colors matching image */
+.status-item.optimal .status-left i { color: var(--cyan); }
+.status-item.optimal .status-right { color: var(--green); }
+.status-item.optimal .status-right .status-dot { background: var(--green); box-shadow: 0 0 5px var(--green); }
+
+.status-item.stable-mem .status-left i { color: var(--blue); }
+.status-item.stable-mem .status-right { color: var(--text-main); }
+.status-item.stable-mem .status-right .status-dot { background: var(--cyan); box-shadow: 0 0 5px var(--cyan); }
+
+.status-item.stable-net .status-left i { color: var(--cyan); }
+.status-item.stable-net .status-right { color: var(--text-main); }
+.status-item.stable-net .status-right .status-dot { background: var(--cyan); box-shadow: 0 0 5px var(--cyan); }
+
+.status-item.secure .status-left i { color: var(--purple); }
+.status-item.secure .status-right { color: var(--purple); }
+.status-item.secure .status-right .status-dot { background: var(--purple); box-shadow: 0 0 5px var(--purple); }
+
+.status-item.active .status-left i { color: var(--gold); }
+.status-item.active .status-right { color: var(--red); }
+.status-item.active .status-right .status-dot { background: var(--gold); box-shadow: 0 0 5px var(--gold); }
+
+.status-item.online .status-left i { color: var(--cyan); }
+.status-item.online .status-right { color: var(--cyan); }
+.status-item.online .status-right .status-dot { background: var(--cyan); box-shadow: 0 0 5px var(--cyan); }
+
+.status-item.enabled .status-left i { color: var(--red); }
+.status-item.enabled .status-right { color: var(--pink); }
+.status-item.enabled .status-right .status-dot { background: #ff5500; box-shadow: 0 0 5px #ff5500; }
+
+/* Apps Grid */
+.panel-title.apps-title { margin-bottom: 15px; }
+.view-all { font-size: 0.6rem; color: var(--cyan); cursor: pointer; font-family: 'Rajdhani', sans-serif; font-weight: 600; letter-spacing: 0.05em; transition: text-shadow 0.2s; }
+.view-all:hover { text-shadow: 0 0 5px var(--cyan); }
+.apps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: y 15px; row-gap: 15px; }
+.app-btn { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: transform 0.2s; }
+.app-btn:hover { transform: translateY(-2px); }
+.app-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 1.3rem; color: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+.app-lbl { font-size: 0.65rem; color: var(--text-main); font-weight: 600; text-align: center; }
+
+/* System Controls (Toggles) */
+.controls-list { display: flex; flex-direction: column; gap: 16px; }
+.control-item { display: flex; justify-content: space-between; align-items: center; }
+.control-label { display: flex; align-items: center; gap: 12px; font-size: 0.75rem; color: var(--text-main); font-weight: 600; font-family: 'Rajdhani', sans-serif; letter-spacing: 0.05em; }
+.control-label i { width: 16px; text-align: center; font-size: 1rem; }
+.control-toggle { display: flex; align-items: center; gap: 12px; }
+.toggle-text { font-family: 'Orbitron', sans-serif; font-size: 0.65rem; font-weight: 700; width: 25px; text-align: right; letter-spacing: 0.1em; }
+.toggle-text.on { color: var(--green); }
+.toggle-text.off { color: var(--text-muted); }
+.toggle-switch { width: 40px; height: 20px; border-radius: 10px; position: relative; cursor: pointer; transition: all 0.3s; border: 1px solid transparent; }
+.toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; transition: all 0.3s; }
+.toggle-switch.on { background: rgba(0, 255, 136, 0.15); border-color: var(--green); }
+.toggle-switch.on::after { left: 22px; background: var(--green); box-shadow: 0 0 8px var(--green); }
+.toggle-switch.off { background: rgba(255, 255, 255, 0.05); border-color: rgba(255,255,255,0.1); }
+.toggle-switch.off::after { left: 2px; background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+/* Shortcuts Grid */
+.shortcuts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.shortcut-btn { display: flex; justify-content: center; align-items: center; gap: 10px; padding: 12px; border-radius: 24px; border: 1px solid; font-family: 'Orbitron', sans-serif; font-size: 0.65rem; letter-spacing: 0.1em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: rgba(0,0,0,0.2); }
+.shortcut-btn.wake { border-color: var(--cyan); color: var(--cyan); }
+.shortcut-btn.wake:hover { background: rgba(0, 229, 255, 0.1); box-shadow: 0 0 10px rgba(0,229,255,0.2); }
+.shortcut-btn.sleep { border-color: var(--gold); color: var(--gold); }
+.shortcut-btn.sleep:hover { background: rgba(255, 170, 0, 0.1); box-shadow: 0 0 10px rgba(255,170,0,0.2); }
+.shortcut-btn.restart { border-color: var(--green); color: var(--green); }
+.shortcut-btn.restart:hover { background: rgba(0, 255, 136, 0.1); box-shadow: 0 0 10px rgba(0,255,136,0.2); }
+.shortcut-btn.shutdown { border-color: var(--red); color: var(--red); }
+.shortcut-btn.shutdown:hover { background: rgba(255, 60, 60, 0.1); box-shadow: 0 0 10px rgba(255,60,60,0.2); }
+
+/* Animations */
+@keyframes spin { 100% { transform: rotate(360deg); } }
+@keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+@keyframes wb-anim { from { height: 6px; opacity: 0.5; } to { height: 24px; opacity: 1; box-shadow: 0 0 10px var(--cyan); } }
+
+/* Hidden sliders container (retained features) */
+.sliders-hidden { display: none; margin-top: 15px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
+.sliders-hidden.show { display: block; }
+input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; margin: 10px 0; }
+input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.1); border-radius: 2px; }
+input[type=range]::-webkit-slider-thumb { border: none; height: 14px; width: 14px; border-radius: 50%; background: var(--cyan); cursor: pointer; -webkit-appearance: none; margin-top: -5px; box-shadow: 0 0 10px var(--cyan); }
+
+/* Custom Modal */
+#confirm-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+#confirm-modal.show { display: flex; }
+.modal-content { background: var(--panel); border: 1px solid var(--red); padding: 30px; border-radius: 8px; box-shadow: 0 0 40px rgba(255,60,60,0.3); max-width: 400px; width: 100%; text-align: center; }
+.modal-title { font-family: 'Orbitron', sans-serif; color: var(--red); letter-spacing: 0.1em; margin-bottom: 20px; font-weight: 700; font-size: 1.1rem; }
+.modal-btns { display: flex; gap: 20px; margin-top: 25px; justify-content: center; }
+.modal-btns button { padding: 10px 25px; font-family: 'Orbitron', sans-serif; cursor: pointer; border-radius: 4px; border: 1px solid; background: rgba(0,0,0,0.3); font-weight: 600; letter-spacing: 0.05em; transition: all 0.2s; }
+.modal-btns .btn-yes { border-color: var(--red); color: var(--red); }
+.modal-btns .btn-yes:hover { background: rgba(255,60,60,0.15); box-shadow: 0 0 15px rgba(255,60,60,0.3); }
+.modal-btns .btn-no { border-color: var(--text-muted); color: var(--text-muted); }
+.modal-btns .btn-no:hover { background: rgba(255,255,255,0.05); }
+
+</style>
+</head>
+<body>
+
+<div class="layout-wrapper">
+  <!-- TOP HEADER -->
+  <header class="top-header">
+    <div class="header-left">
+      <div class="logo-icon">
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="46" fill="none" stroke="var(--cyan)" stroke-width="1.5" stroke-dasharray="4 6"/>
+          <polygon points="50,10 85,30 85,70 50,90 15,70 15,30" fill="none" stroke="var(--cyan)" stroke-width="2"/>
+          <circle cx="50" cy="50" r="18" fill="none" stroke="var(--cyan)" stroke-width="2"/>
+          <line x1="50" y1="10" x2="50" y2="90" stroke="var(--cyan)" stroke-width="1" opacity="0.5"/>
+          <line x1="15" y1="30" x2="85" y2="70" stroke="var(--cyan)" stroke-width="1" opacity="0.5"/>
+          <line x1="15" y1="70" x2="85" y2="30" stroke="var(--cyan)" stroke-width="1" opacity="0.5"/>
+          <circle cx="50" cy="50" r="6" fill="var(--cyan)"/>
+        </svg>
+      </div>
+      <div class="header-title-container">
+        <div class="header-title">J.A.R.V.I.S</div>
+        <div class="header-subtitle">JUST A RATHER VERY INTELLIGENT SYSTEM</div>
+      </div>
+    </div>
+    
+    <div class="header-center">
+      <div class="listening-text"><i class="fa-solid fa-microphone"></i> LISTENING...</div>
+      <div class="wave-top" id="top-waveform">
+        <div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div>
+        <div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="standby-box">
+        <div class="status-dot" id="header-status-dot"></div>
+        <span id="header-status-txt">STANDBY</span>
+      </div>
+      <div class="battery-box">
+        <i class="fa-solid fa-battery-full"></i>
+        <span id="bat-pct-header">85%</span>
+      </div>
+      <div class="clock-box">
+        <div class="clock-time" id="clock-time">08:42:17 PM</div>
+        <div class="clock-date" id="clock-date">WED, APR 9, 2025</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN GRID -->
+  <main class="main-grid">
+    
+    <!-- LEFT PANEL -->
+    <div class="side-panel">
+      
+      <!-- System Metrics -->
+      <div class="panel">
+        <div class="panel-title">SYSTEM METRICS</div>
+        
+        <div class="metric-row">
+          <div class="metric-labels">
+            <span><i class="fa-solid fa-microchip" style="color:var(--purple)"></i> CPU</span>
+            <span class="val" id="cpu-val" style="color: var(--gold);">24%</span>
+          </div>
+          <div class="metric-bar-bg"><div class="metric-bar-fill" id="cpu-bar" style="width: 24%; background: linear-gradient(90deg, var(--gold), #ff5500);"></div></div>
+        </div>
+        
+        <div class="metric-row">
+          <div class="metric-labels">
+            <span><i class="fa-solid fa-memory" style="color:var(--purple)"></i> RAM</span>
+            <span class="val" id="ram-val-1" style="color: var(--gold);">68%</span>
+          </div>
+          <div class="metric-bar-bg"><div class="metric-bar-fill" id="ram-bar-1" style="width: 68%; background: linear-gradient(90deg, var(--blue), var(--cyan));"></div></div>
+        </div>
+
+        <div class="metric-row">
+          <div class="metric-labels">
+            <span><i class="fa-solid fa-server" style="color:var(--blue)"></i> RAM</span>
+            <span class="val" id="ram-val-2" style="color: var(--text-main);">41%</span>
+          </div>
+          <div class="metric-bar-bg"><div class="metric-bar-fill" id="ram-bar-2" style="width: 41%; background: linear-gradient(90deg, var(--blue), #00aaff);"></div></div>
+        </div>
+
+        <div class="metric-row">
+          <div class="metric-labels">
+            <span><i class="fa-solid fa-circle-dot" style="color:var(--cyan)"></i> TEMP</span>
+            <span class="val" id="temp-val" style="color: #ff5500;">54°C</span>
+          </div>
+          <div class="metric-bar-bg"><div class="metric-bar-fill" id="temp-bar" style="width: 54%; background: linear-gradient(90deg, var(--gold), #ff5500);"></div></div>
+        </div>
+
+        <div class="circle-metrics-grid">
+          <div class="circle-meter cyan">
+            <svg viewBox="0 0 36 36">
+              <path class="circle-bg" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"/>
+              <path class="circle-fill" id="circ-net" stroke-dasharray="100, 100" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"/>
+            </svg>
+            <div class="circle-inner">
+              <div class="circle-lbl"><i class="fa-solid fa-wifi"></i> NET</div>
+              <div class="circle-val">128<span style="font-size:0.4rem; vertical-align: top; margin-left: 1px;">mbps</span></div>
+            </div>
+          </div>
+          <div class="circle-meter orange">
+            <svg viewBox="0 0 36 36">
+              <path class="circle-bg" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"/>
+              <path class="circle-fill" id="circ-disk" stroke-dasharray="63, 100" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"/>
+            </svg>
+            <div class="circle-inner">
+              <div class="circle-lbl"><i class="fa-solid fa-database"></i> DISK</div>
+              <div class="circle-val" id="disk-val">63%</div>
+            </div>
+          </div>
+          <div class="circle-meter yellow">
+            <svg viewBox="0 0 36 36">
+              <path class="circle-bg" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"/>
+              <path class="circle-fill" id="circ-pwr" stroke-dasharray="100, 100" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"/>
+            </svg>
+            <div class="circle-inner">
+              <div class="circle-lbl"><i class="fa-solid fa-bolt"></i> POWER</div>
+              <div class="circle-val">AC</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Access -->
+      <div class="panel">
+        <div class="panel-title">QUICK ACCESS</div>
+        <div class="qa-grid">
+          <button class="qa-btn" onclick="sendCmd('what time is it')" style="color:var(--purple)"><div class="qa-icon-wrap" style="color:currentColor"><i class="fa-regular fa-clock"></i></div><span class="lbl">TIME</span></button>
+          <button class="qa-btn" onclick="sendCmd('battery status')" style="color:var(--green)"><div class="qa-icon-wrap" style="color:currentColor"><i class="fa-solid fa-battery-full"></i></div><span class="lbl">BATTERY</span></button>
+          <button class="qa-btn" onclick="sendCmd('system stats')" style="color:var(--purple)"><div class="qa-icon-wrap" style="color:currentColor"><i class="fa-solid fa-address-card"></i></div><span class="lbl">STATS</span></button>
+          <button class="qa-btn" onclick="sendCmd('take screenshot')" style="color:var(--cyan)"><div class="qa-icon-wrap" style="color:currentColor"><i class="fa-solid fa-crop-simple"></i></div><span class="lbl">SCREENSHOT</span></button>
+          
+          <button class="qa-btn" onclick="sendCmd('lock screen')" style="color:var(--gold)"><div class="qa-icon-wrap" style="color:currentColor"><i class="fa-solid fa-lock"></i></div><span class="lbl">LOCK</span></button>
+          <button class="qa-btn" onclick="sendCmd('wifi on')" style="color:var(--blue)"><div class="qa-icon-wrap" style="color:currentColor"><i class="fa-solid fa-wifi"></i></div><span class="lbl">WIFI</span></button>
+          <button class="qa-btn" onclick="sendCmd('hotspot on')" style="color:var(--cyan)"><div class="qa-icon-wrap" style="color:currentColor"><i class="fa-solid fa-satellite-dish"></i></div><span class="lbl">HOTSPOT</span></button>
+          <button class="qa-btn" onclick="sendCmd('night light on')" style="color:var(--gold)"><div class="qa-icon-wrap" style="color:currentColor"><i class="fa-solid fa-moon"></i></div><span class="lbl">NIGHT LIGHT</span></button>
+          
+          <button class="qa-btn" onclick="sendCmd('bluetooth on')" style="color:var(--blue)"><div class="qa-icon-wrap" style="color:currentColor"><i class="fa-brands fa-bluetooth-b"></i></div><span class="lbl">BLUETOOTH</span></button>
+          <button class="qa-btn" onclick="sendCmd('minimize all')" style="color:var(--cyan)"><div class="qa-icon-wrap" style="color:currentColor"><i class="fa-solid fa-desktop"></i></div><span class="lbl">DESKTOP</span></button>
+          <button class="qa-btn" onclick="toggleSliders()" style="color:var(--gold)"><div class="qa-icon-wrap" style="color:currentColor"><i class="fa-solid fa-volume-high"></i></div><span class="lbl">VOLUME</span></button>
+          <button class="qa-btn" onclick="toggleSliders()" style="color:var(--cyan)"><div class="qa-icon-wrap" style="color:currentColor"><i class="fa-solid fa-sun"></i></div><span class="lbl">BRIGHTNESS</span></button>
+        </div>
+
+        <!-- Hidden Sliders (Retained from original code but hidden to match design) -->
+        <div id="hidden-sliders" class="sliders-hidden">
+          <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--cyan); font-family: 'Orbitron', sans-serif;"><span>VOLUME</span> <span id="vol-val">50%</span></div>
+          <input type="range" id="vol-slider" min="0" max="100" value="50" oninput="onVolSlide(this.value)" onmouseup="sendCmd('set volume to '+this.value)"/>
+          
+          <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--cyan); margin-top:12px; font-family: 'Orbitron', sans-serif;"><span>BRIGHTNESS</span> <span id="bright-val">50%</span></div>
+          <input type="range" id="bright-slider" min="0" max="100" value="50" oninput="onBrightSlide(this.value)" onmouseup="sendCmd('set brightness to '+this.value)"/>
+        </div>
+      </div>
+
+      <!-- Visualizer -->
+      <div class="panel" style="flex: 1;">
+        <div class="panel-title">VISUALIZER</div>
+        <div class="visualizer-box" id="viz-container">
+          <!-- Bars injected via JS -->
+        </div>
+        <div class="viz-label">SYSTEM AUDIO FEEDBACK <br><span class="viz-status" id="viz-status-txt">ACTIVE</span></div>
+      </div>
+
+    </div>
+
+    <!-- CENTER PANEL -->
+    <div class="center-panel">
+      <!-- ORB -->
+      <div class="orb-container">
+        <svg class="orb-bg-paths" viewBox="0 0 200 200">
+          <path d="M 10 100 A 90 90 0 0 1 190 100" transform="rotate(45 100 100)"/>
+          <path d="M 10 100 A 90 90 0 0 0 190 100" transform="rotate(-30 100 100)"/>
+          <path d="M 20 100 A 80 80 0 0 1 180 100" transform="rotate(15 100 100)"/>
+        </svg>
+        <div class="orb-wrapper" onclick="wakeJarvis()">
+          <div class="ring ring-outer"><div class="dot"></div><div class="dot"></div></div>
+          <div class="ring ring-1"></div>
+          <div class="ring ring-2"><div class="orb-node"></div><div class="orb-node"></div></div>
+          <div class="ring ring-3"></div>
+          <div class="orb-core" id="orb-core">
+            <h1>J</h1>
+            <p>TAP TO WAKE</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Log -->
+      <div class="chat-panel">
+        <div class="chat-header">
+          <span>NEURAL INTERFACE LOG</span>
+          <button class="btn-clear" onclick="document.getElementById('chat-messages').innerHTML=''">CLEAR</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+          <!-- Initial default messages matching the image -->
+          <div class="msg-row jarvis">
+            <div class="avatar">J</div>
+            <div class="bubble">
+              <div class="msg-info"><span class="sender">J.A.R.V.I.S</span> <span class="msg-time">08:42 PM</span></div>
+              <div class="msg-text">Good evening, Mayank. Systems online and<br>all modules operational. How can I assist<br>you today?</div>
+            </div>
+          </div>
+          <div class="msg-row user">
+            <div class="avatar"><i class="fa-solid fa-user"></i></div>
+            <div class="bubble">
+              <div class="msg-info"><span class="sender">YOU</span> <span class="msg-time">08:42 PM</span></div>
+              <div class="msg-text">Open VS Code on YouTube</div>
+            </div>
+          </div>
+          <div class="msg-row jarvis">
+            <div class="avatar">J</div>
+            <div class="bubble">
+              <div class="msg-info"><span class="sender">J.A.R.V.I.S</span> <span class="msg-time">08:42 PM</span></div>
+              <div class="msg-text">Opening VS Code and YouTube for you, sir.<br>Launching applications now...</div>
+            </div>
+          </div>
+          <div class="msg-row user">
+            <div class="avatar"><i class="fa-solid fa-user"></i></div>
+            <div class="bubble">
+              <div class="msg-info"><span class="sender">YOU</span> <span class="msg-time">08:42 PM</span></div>
+              <div class="msg-text">Show me system statistics</div>
+            </div>
+          </div>
+          <div class="msg-row jarvis" id="last-msg">
+            <div class="avatar">J</div>
+            <div class="bubble">
+              <div class="msg-info"><span class="sender">J.A.R.V.I.S</span> <span class="msg-time">08:42 PM</span></div>
+              <div class="msg-text">CPU: 24% | RAM: 68% | GPU: 41% | TEMP: 54°C<br>Network: 128 Mbps | Disk: 63%<br>All systems running smoothly, sir.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-input-wrapper">
+          <button class="mic-btn" id="mic-btn" onclick="wakeJarvis()"><i class="fa-solid fa-microphone"></i></button>
+          <div class="input-container">
+            <input type="text" class="chat-input" id="chat-input" placeholder="AWAITING COMMAND..." onkeydown="if(event.key==='Enter') sendText()"/>
+            <button class="send-btn" onclick="sendText()"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="side-panel">
+      
+      <!-- Applications -->
+      <div class="panel">
+        <div class="panel-title apps-title" style="justify-content: space-between">
+          <span>APPLICATIONS</span>
+          <span class="view-all">VIEW ALL</span>
+        </div>
+        <div class="apps-grid">
+          <div class="app-btn" onclick="sendCmd('open chrome')"><div class="app-icon" style="background:transparent"><img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Google_Chrome_icon_%28February_2022%29.svg" width="32" height="32" alt="Chrome"></div><div class="app-lbl">Chrome</div></div>
+          <div class="app-btn" onclick="sendCmd('open brave')"><div class="app-icon" style="background:transparent"><img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Brave_icon_lionface.png" width="32" height="32" alt="Brave" style="filter: drop-shadow(0 0 5px rgba(255,60,0,0.5))"></div><div class="app-lbl">Brave</div></div>
+          <div class="app-btn" onclick="sendCmd('open vs code')"><div class="app-icon" style="background:transparent"><img src="https://upload.wikimedia.org/wikipedia/commons/9/9a/Visual_Studio_Code_1.35_icon.svg" width="30" height="30" alt="VS Code"></div><div class="app-lbl">VS Code</div></div>
+          <div class="app-btn" onclick="sendCmd('open notepad')"><div class="app-icon" style="background:rgba(0,229,255,0.1); color:var(--cyan); border: 1px solid rgba(0,229,255,0.3);"><i class="fa-solid fa-file-lines"></i></div><div class="app-lbl">Notepad</div></div>
+          
+          <div class="app-btn" onclick="sendCmd('open youtube')"><div class="app-icon" style="background:transparent"><img src="https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg" width="32" height="32" alt="YouTube"></div><div class="app-lbl">YouTube</div></div>
+          <div class="app-btn" onclick="sendCmd('open spotify')"><div class="app-icon" style="background:transparent"><img src="https://upload.wikimedia.org/wikipedia/commons/8/84/Spotify_icon.svg" width="32" height="32" alt="Spotify"></div><div class="app-lbl">Spotify</div></div>
+          <div class="app-btn" onclick="sendCmd('open whatsapp')"><div class="app-icon" style="background:transparent"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="32" height="32" alt="WhatsApp"></div><div class="app-lbl">WhatsApp</div></div>
+          <div class="app-btn" onclick="sendCmd('open discord')"><div class="app-icon" style="background:#5865f2"><i class="fa-brands fa-discord"></i></div><div class="app-lbl">Discord</div></div>
+          
+          <div class="app-btn" onclick="sendCmd('open github')"><div class="app-icon" style="background:transparent"><img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg" width="32" height="32" alt="GitHub" style="filter: invert(1)"></div><div class="app-lbl">GitHub</div></div>
+          <div class="app-btn" onclick="sendCmd('open git desktop')"><div class="app-icon" style="background:#a633ff"><i class="fa-solid fa-code-merge"></i></div><div class="app-lbl">Git Desktop</div></div>
+          <div class="app-btn" onclick="sendCmd('open calculator')"><div class="app-icon" style="background:rgba(255,255,255,0.1); color:#fff"><i class="fa-solid fa-calculator"></i></div><div class="app-lbl">Calculator</div></div>
+          <div class="app-btn" onclick="sendCmd('open settings')"><div class="app-icon" style="background:rgba(255,255,255,0.1); color:#fff"><i class="fa-solid fa-gear"></i></div><div class="app-lbl">Settings</div></div>
+          
+          <div class="app-btn" onclick="sendCmd('open explorer')"><div class="app-icon" style="background:#ffaa00; border-radius: 4px;"><i class="fa-solid fa-folder"></i></div><div class="app-lbl">Explorer</div></div>
+          <div class="app-btn" onclick="sendCmd('open microsoft 365')"><div class="app-icon" style="background:#d83b01"><i class="fa-brands fa-microsoft"></i></div><div class="app-lbl">Microsoft 365</div></div>
+          <div class="app-btn" onclick="sendCmd('open telegram')"><div class="app-icon" style="background:transparent"><img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" width="32" height="32" alt="Telegram"></div><div class="app-lbl">Telegram</div></div>
+          
+          <!-- REPLACED: ADD APP with ✨ PROTOCOL -->
+          <div class="app-btn" onclick="suggestProtocol()"><div class="app-icon" style="border:1px solid rgba(0,229,255,0.3); background: rgba(0,229,255,0.05); box-shadow: 0 0 10px rgba(0,229,255,0.2);"><i class="fa-solid fa-brain" style="color:var(--cyan)"></i></div><div class="app-lbl">✨ Protocol</div></div>
+        </div>
+      </div>
+
+      <!-- System Controls -->
+      <div class="panel">
+        <div class="panel-title">SYSTEM CONTROLS</div>
+        <div class="controls-list">
+          <div class="control-item">
+            <div class="control-label"><i class="fa-solid fa-wifi" style="color:var(--blue)"></i> BATTERY SAVER</div>
+            <div class="control-toggle">
+              <span class="toggle-text on" id="lbl-bsaver">ON</span>
+              <div class="toggle-switch on" id="tog-bsaver" onclick="toggleSwitch('bsaver')"></div>
+            </div>
+          </div>
+          <div class="control-item">
+            <div class="control-label"><i class="fa-solid fa-wifi" style="color:var(--blue)"></i> WIFI</div>
+            <div class="control-toggle">
+              <span class="toggle-text on" id="lbl-wifi">ON</span>
+              <div class="toggle-switch on" id="tog-wifi" onclick="toggleSwitch('wifi')"></div>
+            </div>
+          </div>
+          <div class="control-item">
+            <div class="control-label"><i class="fa-solid fa-wifi" style="color:var(--blue)"></i> BLUETOOTH</div>
+            <div class="control-toggle">
+              <span class="toggle-text on" id="lbl-bt">ON</span>
+              <div class="toggle-switch on" id="tog-bt" onclick="toggleSwitch('bt')"></div>
+            </div>
+          </div>
+          <div class="control-item">
+            <div class="control-label"><i class="fa-solid fa-satellite-dish" style="color:var(--text-muted)"></i> HOTSPOT</div>
+            <div class="control-toggle">
+              <span class="toggle-text off" id="lbl-hs">OFF</span>
+              <div class="toggle-switch off" id="tog-hs" onclick="toggleSwitch('hs')"></div>
+            </div>
+          </div>
+          <div class="control-item">
+            <div class="control-label"><i class="fa-solid fa-plus" style="color:var(--text-muted)"></i> AIRPLANE MODE</div>
+            <div class="control-toggle">
+              <span class="toggle-text off" id="lbl-air">OFF</span>
+              <div class="toggle-switch off" id="tog-air" onclick="toggleSwitch('air')"></div>
+            </div>
+          </div>
+          <div class="control-item">
+            <div class="control-label"><i class="fa-solid fa-moon" style="color:var(--text-muted)"></i> NIGHT LIGHT</div>
+            <div class="control-toggle">
+              <span class="toggle-text off" id="lbl-nl">OFF</span>
+              <div class="toggle-switch off" id="tog-nl" onclick="toggleSwitch('nl')"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shortcuts -->
+      <div class="panel" style="flex: 1;">
+        <div class="panel-title">SHORTCUTS</div>
+        <div class="shortcuts-grid">
+          <button class="shortcut-btn wake" onclick="wakeJarvis()"><i class="fa-solid fa-sun"></i> WAKE UP</button>
+          <button class="shortcut-btn sleep" onclick="sendCmd('sleep')"><i class="fa-solid fa-power-off"></i> SLEEP</button>
+          <button class="shortcut-btn restart" onclick="sendCmd('restart')"><i class="fa-solid fa-rotate-right"></i> RESTART</button>
+          <button class="shortcut-btn shutdown" onclick="sendCmd('shutdown')"><i class="fa-solid fa-power-off"></i> SHUTDOWN</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Modal Confirmation -->
+<div id="confirm-modal">
+  <div class="modal-content">
+    <div class="modal-title"><i class="fa-solid fa-triangle-exclamation"></i> CONFIRMATION REQUIRED</div>
+    <div style="font-family:'Share Tech Mono'; color:var(--text-main); font-size: 0.9rem;" id="confirm-msg">Proceed with critical system operation?</div>
+    <div class="modal-btns">
+      <button class="btn-yes" onclick="confirmAction()">CONFIRM</button>
+      <button class="btn-no" onclick="cancelAction()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── SocketIO — connects to backend if available ────────────────
+// When hosted standalone (GitHub Pages etc.), JARVIS_URL can be set
+// to point to your ngrok/cloudflare tunnel URL.
+// Example: const JARVIS_URL = "https://xxxx.ngrok-free.app";
+const JARVIS_URL = window.JARVIS_BACKEND_URL || window.location.origin;
+
+const socket = io(JARVIS_URL, {
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 3000,
+  timeout: 5000,
+});
+
+let _backendOnline = false;
+
+// ── Clock ──────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  let h = now.getHours(), m = String(now.getMinutes()).padStart(2,'0'), s = String(now.getSeconds()).padStart(2,'0');
+  const ampm = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; h = String(h).padStart(2,'0');
+  document.getElementById('clock-time').innerText = `${h}:${m}:${s} ${ampm}`;
+  const days=['SUN','MON','TUE','WED','THU','FRI','SAT'], months=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  document.getElementById('clock-date').innerText = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ── Toggle switches ────────────────────────────────────────────
+const toggleStates = {bsaver:true, wifi:true, bt:true, hs:false, air:false, nl:false};
+const toggleCmds = {
+  bsaver:['battery saver on','battery saver off'],
+  wifi:['wifi on','wifi off'],
+  bt:['bluetooth on','bluetooth off'],
+  hs:['hotspot on','hotspot off'],
+  air:['airplane mode on','airplane mode off'],
+  nl:['night light on','night light off']
+};
+function toggleSwitch(id) {
+  toggleStates[id] = !toggleStates[id];
+  const on = toggleStates[id];
+  const tog = document.getElementById(`tog-${id}`);
+  const lbl = document.getElementById(`lbl-${id}`);
+  const icon = tog.closest('.control-item').querySelector('.control-label i');
+  tog.className = 'toggle-switch ' + (on ? 'on' : 'off');
+  lbl.className = 'toggle-text ' + (on ? 'on' : 'off');
+  lbl.innerText = on ? 'ON' : 'OFF';
+  if (icon) icon.style.color = on ? '#00e5ff' : '#628296';
+  socket.emit('text_command', {text: toggleCmds[id][on ? 0 : 1]});
+}
+
+// ── Visualizer ─────────────────────────────────────────────────
+const vizContainer = document.getElementById('viz-container');
+for(let i=0;i<45;i++){const b=document.createElement('div');b.className='viz-bar';vizContainer.appendChild(b);}
+let isSpeaking = false;
+function animateViz() {
+  document.querySelectorAll('.viz-bar').forEach((b,i)=>{
+    const h = isSpeaking ? (Math.random()*65+15) : (Math.sin(Date.now()/600+i*0.2)*12+18);
+    b.style.height = h+'px';
+  });
+}
+setInterval(animateViz, 80);
+
+// ── Stats polling ──────────────────────────────────────────────
+function fetchStats() {
+  fetch('/api/stats').then(r=>r.json()).then(d=>{
+    if(d.cpu !== undefined) {
+      document.getElementById('cpu-val').innerText = d.cpu.toFixed(1)+'%';
+      document.getElementById('cpu-bar').style.width = d.cpu+'%';
+    }
+    if(d.ram !== undefined) {
+      document.getElementById('ram-val').innerText = d.ram.toFixed(1)+'%';
+      document.getElementById('ram-bar').style.width = d.ram+'%';
+    }
+    if(d.battery !== null && d.battery !== undefined) {
+      document.getElementById('bat-pct-header').innerText = d.battery+'%';
+      document.getElementById('pwr-val').innerText = d.charging ? 'AC' : 'BAT';
+      const pct = d.battery;
+      document.getElementById('circ-pwr').style.strokeDasharray = `${pct},100`;
+    }
+    if(!_vd && d.volume !== undefined) setVolSlider(d.volume);
+    if(!_bd && d.brightness !== undefined) setBrightSlider(d.brightness);
+  }).catch(()=>{});
+}
+setInterval(fetchStats, 5000); fetchStats();
+
+// ── Sliders ────────────────────────────────────────────────────
+let _vd=false, _bd=false;
+function setVolSlider(v){
+  const s=document.getElementById('vol-slider');
+  s.value=v; document.getElementById('vol-val').innerText=v+'%';
+}
+function setBrightSlider(v){
+  const s=document.getElementById('bright-slider');
+  s.value=v; document.getElementById('bright-val').innerText=v+'%';
+}
+function onVolSlide(v){document.getElementById('vol-val').innerText=v+'%';}
+function onBrightSlide(v){document.getElementById('bright-val').innerText=v+'%';}
+function toggleSliders(){document.getElementById('hidden-sliders').classList.toggle('show');}
+
+// ── Status management ──────────────────────────────────────────
+// States: sleeping | awake | thinking | speaking
+const STATUS_CFG = {
+  sleeping: {dot:'var(--green)',  txt:'STANDBY',    label:'SAY JARVIS', orbGlow:'0 0 40px rgba(0,229,255,0.15),inset 0 0 30px rgba(0,229,255,0.05)', micGlow:false},
+  awake:    {dot:'var(--cyan)',   txt:'ACTIVE',     label:'LISTENING',  orbGlow:'0 0 60px rgba(0,229,255,0.35),inset 0 0 40px rgba(0,229,255,0.15)', micGlow:true},
+  thinking: {dot:'var(--purple)',txt:'PROCESSING', label:'THINKING...',orbGlow:'0 0 80px rgba(166,51,255,0.4),inset 0 0 50px rgba(166,51,255,0.2)', micGlow:true},
+  speaking: {dot:'var(--cyan)',   txt:'RESPONDING', label:'SPEAKING',   orbGlow:'0 0 80px rgba(0,229,255,0.5),inset 0 0 50px rgba(0,229,255,0.3)', micGlow:true},
+};
+
+function setStatus(state) {
+  const cfg = STATUS_CFG[state] || STATUS_CFG.sleeping;
+  // Header dot + text
+  const dot = document.getElementById('header-status-dot');
+  dot.style.background = cfg.dot;
+  dot.style.boxShadow = `0 0 10px ${cfg.dot}`;
+  document.getElementById('header-status-txt').innerText = cfg.txt;
+  document.getElementById('header-status-txt').style.color = cfg.dot;
+  // Header listening label
+  document.getElementById('listen-label').innerText = cfg.label;
+  document.getElementById('listen-label').style.color = cfg.dot;
+  // Orb glow
+  document.getElementById('orb-core').style.boxShadow = cfg.orbGlow;
+  document.getElementById('orb-label').innerText = cfg.label;
+  // Mic button
+  const mic = document.getElementById('mic-btn');
+  mic.style.boxShadow = cfg.micGlow ? '0 0 15px rgba(0,229,255,0.4)' : 'none';
+  mic.style.borderColor = cfg.micGlow ? 'var(--cyan)' : 'rgba(0,229,255,0.3)';
+  // Viz
+  isSpeaking = (state === 'speaking');
+  document.getElementById('viz-status-txt').innerText = isSpeaking ? 'ACTIVE' : 'STANDBY';
+  document.getElementById('viz-status-txt').style.color = isSpeaking ? 'var(--cyan)' : 'var(--text-muted)';
+}
+
+// ── Chat messages ──────────────────────────────────────────────
+function addChatMsg(text, type) {
+  const container = document.getElementById('chat-messages');
+  const timeStr = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const row = document.createElement('div');
+  row.className = `msg-row ${type}`;
+  if(type === 'jarvis') {
+    row.innerHTML = `<div class="avatar">J</div><div class="bubble"><div class="msg-info"><span class="sender">J.A.R.V.I.S</span><span class="msg-time">${timeStr}</span></div><div class="msg-text"></div></div>`;
+    container.appendChild(row);
+    container.scrollTop = container.scrollHeight;
+    typeWriter(row.querySelector('.msg-text'), text);
+  } else {
+    row.innerHTML = `<div class="avatar"><i class="fa-solid fa-user"></i></div><div class="bubble"><div class="msg-info"><span class="sender">YOU</span><span class="msg-time">${timeStr}</span></div><div class="msg-text">${text}</div></div>`;
+    container.appendChild(row);
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+function typeWriter(el, text, i=0) {
+  if(i < text.length) {
+    el.innerHTML += text.charAt(i);
+    el.closest('.chat-messages').scrollTop = el.closest('.chat-messages').scrollHeight;
+    setTimeout(()=>typeWriter(el,text,i+1), 14);
+  }
+}
+
+// ── Socket events — wired to real backend ─────────────────────
+socket.on('status_change', d => setStatus(d.status));
+
+socket.on('user_message', d => addChatMsg(d.text, 'user'));
+
+socket.on('jarvis_message', d => addChatMsg(d.text, 'jarvis'));
+
+socket.on('speaking_start', () => { isSpeaking=true; setStatus('speaking'); });
+
+socket.on('speaking_end', () => { isSpeaking=false; setStatus('awake'); });
+
+socket.on('volume_update', d => { if(!_vd) setVolSlider(d.value); });
+
+socket.on('brightness_update', d => { if(!_bd) setBrightSlider(d.value); });
+
+socket.on('mic_error', d => addChatMsg(d.message, 'jarvis'));
+
+socket.on('confirmation_required', d => showConfirm(d.action));
+
+socket.on('connect', () => {
+  _backendOnline = true;
+  setStatus('sleeping');
+  document.getElementById('header-status-txt').innerText = 'ONLINE';
+  console.log('[JARVIS] Backend connected:', JARVIS_URL);
+});
+
+socket.on('disconnect', () => {
+  _backendOnline = false;
+  setStatus('sleeping');
+  document.getElementById('header-status-txt').innerText = 'OFFLINE';
+  document.getElementById('header-status-dot').style.background = 'var(--red)';
+  document.getElementById('header-status-dot').style.boxShadow = '0 0 10px var(--red)';
+  document.getElementById('listen-label').innerText = 'BACKEND OFFLINE';
+  document.getElementById('orb-label').innerText = 'OFFLINE';
+});
+
+socket.on('connect_error', () => {
+  if (!_backendOnline) {
+    document.getElementById('header-status-txt').innerText = 'CONNECTING...';
+    document.getElementById('listen-label').innerText = 'CONNECTING...';
+  }
+});
+
+// ── Commands ───────────────────────────────────────────────────
+function sendCmd(cmd) {
+  socket.emit('text_command', {text: cmd});
+}
+
+function sendText() {
+  const input = document.getElementById('chat-input');
+  const txt = input.value.trim();
+  if(!txt) return;
+  input.value = '';
+  socket.emit('text_command', {text: txt});
+}
+
+function wakeJarvis() {
+  socket.emit('wake_jarvis');
+}
+
+// ── Confirm modal ──────────────────────────────────────────────
+function showConfirm(action) {
+  document.getElementById('confirm-msg').innerText = `Initiate system ${action} sequence?`;
+  document.getElementById('confirm-modal').classList.add('show');
+}
+function confirmAction() {
+  document.getElementById('confirm-modal').classList.remove('show');
+  socket.emit('confirm_action');
+}
+function cancelAction() {
+  document.getElementById('confirm-modal').classList.remove('show');
+  socket.emit('cancel_action');
+}
+
+// Initial scroll
+setTimeout(()=>{ document.getElementById('chat-messages').scrollTop = 99999; }, 500);
+</script>
+</body>
+</html>

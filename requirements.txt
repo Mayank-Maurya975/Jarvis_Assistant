@@ -1,0 +1,12 @@
+groq
+SpeechRecognition
+pyaudio
+pyttsx3
+screen-brightness-control
+pycaw
+comtypes
+psutil
+pyautogui
+pillow
+flask
+flask-socketio
